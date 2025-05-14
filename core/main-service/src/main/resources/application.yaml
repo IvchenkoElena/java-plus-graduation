@@ -1,8 +1,16 @@
 server:
-  port: 8080
-stats-server:
-  uri: "${STAT_SERVER_URI}"
+  port: 0
+
+#stats-server:
+#  uri: "${STAT_SERVER_URI}"
+
+statsServiceId: stat-server
+
 spring:
+  application:
+    name: main-service
+  config:
+    import: "optional:configserver:"
   jpa:
     hibernate:
       ddl-auto: none
@@ -18,3 +26,13 @@ spring:
     driver-class-name: "org.postgresql.Driver"
     username: "ewm-db"
     password: "secret"
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: true
+    hostname: localhost
+    instance-id: "${spring.application.name}:${random.value}"
+    leaseRenewalIntervalInSeconds: 10

@@ -1,6 +1,10 @@
 server:
-  port: 9090
+  port: 0
 spring:
+  application:
+    name: stat-server
+  config:
+    import: "optional:configserver:"
   jpa:
     hibernate:
       ddl-auto: none
@@ -16,6 +20,16 @@ spring:
     driver-class-name: "org.postgresql.Driver"
     username: "stats-db"
     password: "secret"
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: true
+    hostname: localhost
+    instance-id: "${spring.application.name}:${random.value}"
+    leaseRenewalIntervalInSeconds: 10
 
 #spring:
 #  config:
