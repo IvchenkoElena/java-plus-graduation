@@ -95,6 +95,7 @@ public class EventServiceImpl implements EventService {
             }
             if (eventUpdateDto.getStateAction().equals(AdminUpdateStateAction.PUBLISH_EVENT)) {
                 event.setState(EventState.PUBLISHED);
+                event.setPublishedOn(LocalDateTime.now());
             }
             if (eventUpdateDto.getStateAction().equals(AdminUpdateStateAction.REJECT_EVENT)) {
                 event.setState(EventState.CANCELED);
