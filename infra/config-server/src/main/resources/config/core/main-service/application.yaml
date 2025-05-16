@@ -1,7 +1,7 @@
 server:
   port: 0
 
-statsServiceId: stat-server
+statsServiceId: stats-server
 
 spring:
   application:
