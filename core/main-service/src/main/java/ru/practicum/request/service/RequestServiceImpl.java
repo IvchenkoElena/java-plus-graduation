@@ -143,11 +143,12 @@ public class RequestServiceImpl implements RequestService {
         for (Request currentRequest : requests) {
             if (currentRequest.getStatus().equals(RequestStatus.PENDING)) {
                 if (eventStatusUpdate.getStatus().equals(RequestStatus.CONFIRMED)) {
-                    if (confirmedRequestsAmount <= participantLimit) {
+                    if (confirmedRequestsAmount < participantLimit) {
                         currentRequest.setStatus(RequestStatus.CONFIRMED);
                         ParticipationRequestDto confirmed = requestMapper
                                 .requestToParticipationRequestDto(currentRequest);
                         confirmedRequests.add(confirmed);
+                        confirmedRequestsAmount += 1;
                     } else {
                         currentRequest.setStatus(RequestStatus.REJECTED);
                         ParticipationRequestDto rejected = requestMapper
