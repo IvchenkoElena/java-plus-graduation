@@ -32,5 +32,5 @@ public class EventDto {
     private String createdOn;
     private String publishedOn;
 
-    private List<CommentDto> comments;
+//    private List<CommentDto> comments;
 }

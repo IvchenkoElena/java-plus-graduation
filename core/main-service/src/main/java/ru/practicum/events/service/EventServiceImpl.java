@@ -269,7 +269,7 @@ public class EventServiceImpl implements EventService {
                 .stream()
                 .map(commentMapper::toDto)
                 .toList();
-        eventDto.setComments(comments);
+//        eventDto.setComments(comments);
 
         return eventDto;
     }
@@ -284,10 +284,10 @@ public class EventServiceImpl implements EventService {
         List<Long> idsList = eventDtoList.stream().map(EventDto::getId).toList();
         List<Request> requests = requestRepository.findAllByEventIdIn(idsList);
 
-        List<CommentDto> comments = commentRepository.findAllByEventIdInAndStatus(idsList, CommentStatus.PUBLISHED)
-                .stream()
-                .map(commentMapper::toDto)
-                .toList();
+//        List<CommentDto> comments = commentRepository.findAllByEventIdInAndStatus(idsList, CommentStatus.PUBLISHED)
+//                .stream()
+//                .map(commentMapper::toDto)
+//                .toList();
 
         List<String> uris = eventDtoList.stream().map(dto -> "/events/" + dto.getId()).toList();
         List<ViewStats> viewStats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), uris, false);
@@ -296,9 +296,9 @@ public class EventServiceImpl implements EventService {
                 .peek(dto -> dto.setConfirmedRequests(requests.stream()
                         .filter(r -> Objects.equals(r.getEvent().getId(), dto.getId()))
                         .count()))
-                .peek(dto -> dto.setComments(comments.stream()
-                        .filter(c -> Objects.equals(c.getEventId(), dto.getId()))
-                        .toList()))
+//                .peek(dto -> dto.setComments(comments.stream()
+//                        .filter(c -> Objects.equals(c.getEventId(), dto.getId()))
+//                        .toList()))
                 .peek(dto -> dto.setViews(viewStats.stream()
                         .filter(v -> v.getUri().equals("/events/" + dto.getId()))
                         .map(ViewStats::getHits)

@@ -57,7 +57,8 @@ public class CompilationServiceImpl implements CompilationService {
         }
         if (dto.getEvents() != null) {
             compilationToUpdate.setEvents(dto.getEvents().stream().map(i -> eventRepository.findById(i)
-                    .orElseThrow(() -> new NotFoundException(String.format("Event with id %s not found", i)))).collect(Collectors.toSet()));
+                    .orElseThrow(() -> new NotFoundException(String.format("Event with id %s not found", i))))
+                    .collect(Collectors.toSet()));
         }
         compilationRepository.save(compilationToUpdate);
 
