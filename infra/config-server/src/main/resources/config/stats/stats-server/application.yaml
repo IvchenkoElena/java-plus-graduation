@@ -2,7 +2,7 @@ server:
   port: 0
 spring:
   application:
-    name: stat-server
+    name: stats-server
   jpa:
     hibernate:
       ddl-auto: none
