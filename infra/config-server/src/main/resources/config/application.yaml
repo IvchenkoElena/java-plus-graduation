@@ -1,17 +1,19 @@
 spring:
   application:
-    name: main-service
-  config:
-    import: "configserver:"
+    name: config-server
+  profiles:
+    active: native
   cloud:
     config:
-      discovery:
-        enabled: true
-        serviceId: config-server
-      fail-fast: true
-      retry:
-        useRandomPolicy: true
-        max-interval: 6000
+      server:
+        native:
+          searchLocations:
+            - classpath:config/core/{application}
+            - classpath:config/stat/{application}
+            - classpath:config/infra/{application}
+
+server:
+  port: 0
 
 eureka:
   client:
