@@ -11,10 +11,11 @@ import ru.practicum.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.compilation.mapper.CompilationMapperImpl;
 import ru.practicum.compilation.model.Compilation;
 import ru.practicum.compilation.repository.CompilationRepository;
+import ru.practicum.events.model.Event;
 import ru.practicum.events.repository.EventRepository;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,8 +32,11 @@ public class CompilationServiceImpl implements CompilationService {
         compilation.setPinned(dto.isPinned());
         compilation.setTitle(dto.getTitle());
         if (dto.getEvents() != null) {
-            compilation.setEvents(dto.getEvents().stream().map(i -> eventRepository.findById(i)
-                    .orElseThrow(() -> new NotFoundException(String.format("Event with id %s not found", i)))).collect(Collectors.toSet()));
+            List<Event> existedEvents = eventRepository.findAllByIdIn(dto.getEvents());
+            if (existedEvents.size() < dto.getEvents().size()) {
+                throw new NotFoundException("Some events not found");
+            }
+            compilation.setEvents(new HashSet<>(existedEvents));
         }
         compilationRepository.save(compilation);
         return mapper.toDto(compilation);
@@ -56,9 +60,11 @@ public class CompilationServiceImpl implements CompilationService {
             compilationToUpdate.setTitle(dto.getTitle());
         }
         if (dto.getEvents() != null) {
-            compilationToUpdate.setEvents(dto.getEvents().stream().map(i -> eventRepository.findById(i)
-                    .orElseThrow(() -> new NotFoundException(String.format("Event with id %s not found", i))))
-                    .collect(Collectors.toSet()));
+            List<Event> existedEvents = eventRepository.findAllByIdIn(dto.getEvents());
+            if (existedEvents.size() < dto.getEvents().size()) {
+                throw new NotFoundException("Some events not found");
+            }
+            compilationToUpdate.setEvents(new HashSet<>(existedEvents));
         }
         compilationRepository.save(compilationToUpdate);
 
