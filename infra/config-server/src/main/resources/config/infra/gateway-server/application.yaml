@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-server
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: public_categories_route
+          uri: lb://main-service
+          predicates:
+            - Path=/categories/**
+        - id: admin_categories_route
+          uri: lb://main-service
+          predicates:
+            - Path=/admin/categories/**
+        - id: admin_comments_route
+          uri: lb://main-service
+          predicates:
+            - Path=/admin/comments/**
+        - id: private_comments_route
+          uri: lb://main-service
+          predicates:
+            - Path=/users/{userId}/comments/**
+        - id: admin_compilations_route
+          uri: lb://main-service
+          predicates:
+            - Path=/admin/compilations/**
+        - id: public_compilations_route
+          uri: lb://main-service
+          predicates:
+            - Path=/compilations/**
+        - id: admin_events_route
+          uri: lb://main-service
+          predicates:
+            - Path=/admin/events/**
+        - id: private_events_route
+          uri: lb://main-service
+          predicates:
+            - Path=/users/{userId}/events/**
+        - id: public_events_route
+          uri: lb://main-service
+          predicates:
+            - Path=/events/**
+        - id: private_request_route
+          uri: lb://main-service
+          predicates:
+            - Path=/users/{userId}/**
+        - id: admin_users_route
+          uri: lb://main-service
+          predicates:
+            - Path=/admin/users/**
