@@ -1,7 +1,7 @@
-package ru.practicum.request.dto;
+package ru.practicum.dto;
 
 import lombok.Data;
-import ru.practicum.request.model.RequestStatus;
+import ru.practicum.model.RequestStatus;
 
 import java.util.List;
 
