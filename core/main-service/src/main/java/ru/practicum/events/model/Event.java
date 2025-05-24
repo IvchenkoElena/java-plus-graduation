@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import ru.practicum.category.model.Category;
-import ru.practicum.user.model.User;
 
 import java.time.LocalDateTime;
 
@@ -55,9 +54,8 @@ public class Event {
     @JoinColumn(name = "location_id")
     private Location location;
 
-    @ManyToOne
-    @JoinColumn(name = "initiator_id")
-    private User initiator;
+    @Column(name = "initiator_id")
+    private long initiatorId;
 
     @Enumerated(EnumType.STRING)
     private EventState state;

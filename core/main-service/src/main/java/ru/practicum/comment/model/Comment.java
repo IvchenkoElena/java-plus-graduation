@@ -1,5 +1,6 @@
 package ru.practicum.comment.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -15,7 +16,6 @@ import lombok.Setter;
 import lombok.ToString;
 import ru.practicum.comment.enums.CommentStatus;
 import ru.practicum.events.model.Event;
-import ru.practicum.user.model.User;
 
 import java.time.LocalDateTime;
 
@@ -35,10 +35,9 @@ public class Comment {
     @ToString.Exclude
     private Event event;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id")
-    @ToString.Exclude
-    private User author;
+    @Column(name = "author_id")
+//    @ToString.Exclude
+    private long authorId;
 
     private LocalDateTime created = LocalDateTime.now();
 
