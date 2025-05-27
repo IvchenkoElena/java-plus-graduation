@@ -16,10 +16,10 @@ public class EventCreateDto {
     @NotBlank
     @Size(min = 3, max = 120)
     private String title;
-    //@NotBlank
+    @NotBlank
     @Size(min = 20, max = 2000)
     private String annotation;
-    //@NotBlank
+    @NotBlank
     @Size(min = 20, max = 7000)
     private String description;
     @NotNull

@@ -29,6 +29,7 @@ import ru.practicum.repository.RequestRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -52,7 +53,7 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public ParticipationRequestDto addParticipationRequest(Long userId, Long eventId) {
-        if (eventClient.getByIdAndInitiatorId(eventId, userId) != null) {
+        if (Objects.equals(eventClient.getById(eventId).getInitiator(), userId)) {
             throw new InitiatorRequestException(String.format("User with id %s is initiator for event with id %s",
                     userId, eventId));
         }
