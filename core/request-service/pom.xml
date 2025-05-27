@@ -10,7 +10,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>user-service</artifactId>
+    <artifactId>request-service</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -73,7 +73,6 @@
             <version>${project.querydsl}</version>
         </dependency>
 
-
         <!--Database-->
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -87,11 +86,11 @@
         </dependency>
 
         <!--Other-->
-<!--        <dependency>-->
-<!--            <groupId>ru.practicum</groupId>-->
-<!--            <artifactId>stats-client</artifactId>-->
-<!--            <version>${project.version}</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>ru.practicum</groupId>
+            <artifactId>stats-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

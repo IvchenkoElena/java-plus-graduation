@@ -8,10 +8,10 @@ import ru.practicum.dto.user.UserShortDto;
 
 import java.util.List;
 
-@FeignClient(name = "user-service")
+@FeignClient(name = "user-service", path = "/internal/users")
 public interface UserClient {
     @GetMapping
-    public List<UserShortDto> get(@RequestParam final List<Long> ids);
+    List<UserShortDto> get(@RequestParam final List<Long> ids);
     @GetMapping("/exists/{id}")
-    public boolean exists(@PathVariable final long id);
+    boolean exists(@PathVariable final Long id);
 }

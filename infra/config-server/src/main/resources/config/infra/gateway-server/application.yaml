@@ -10,47 +10,22 @@ spring:
         locator:
           enabled: true
       routes:
-        - id: public_categories_route
-          uri: lb://main-service
+        - id: comment_service_route
+          uri: lb://comment-service
           predicates:
-            - Path=/categories/**
-        - id: admin_categories_route
-          uri: lb://main-service
+            - Path=/users/*/comments/**, /admin/comments/**
+
+        - id: request_service_route
+          uri: lb://request-service
           predicates:
-            - Path=/admin/categories/**
-        - id: admin_comments_route
-          uri: lb://main-service
+            - Path=/users/*/requests/**, /users/*/events/*/requests/**
+
+        - id: event_service_route
+          uri: lb://event-service
           predicates:
-            - Path=/admin/comments/**
-        - id: private_comments_route
-          uri: lb://main-service
-          predicates:
-            - Path=/users/{userId}/comments/**
-        - id: admin_compilations_route
-          uri: lb://main-service
-          predicates:
-            - Path=/admin/compilations/**
-        - id: public_compilations_route
-          uri: lb://main-service
-          predicates:
-            - Path=/compilations/**
-        - id: admin_events_route
-          uri: lb://main-service
-          predicates:
-            - Path=/admin/events/**
-        - id: private_events_route
-          uri: lb://main-service
-          predicates:
-            - Path=/users/{userId}/events/**
-        - id: public_events_route
-          uri: lb://main-service
-          predicates:
-            - Path=/events/**
-        - id: private_request_route
-          uri: lb://main-service
-          predicates:
-            - Path=/users/{userId}/**
-        - id: admin_users_route
+            - Path=/events/**, /users/*/events/**, /admin/events/**, /compilations/**, /admin/compilations/**, /admin/categories/**, /categories/**
+
+        - id: user_service_route
           uri: lb://user-service
           predicates:
             - Path=/admin/users/**
