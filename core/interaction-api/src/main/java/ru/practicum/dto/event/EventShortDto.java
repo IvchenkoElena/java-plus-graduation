@@ -2,7 +2,6 @@ package ru.practicum.dto.event;
 
 import lombok.Data;
 import ru.practicum.dto.category.CategoryDto;
-import ru.practicum.dto.user.UserShortDto;
 
 
 @Data
@@ -18,7 +17,7 @@ public class EventShortDto {
 
     private CategoryDto category;
 
-    private UserShortDto initiator;
+    private Long initiator;
 
     private String eventDate;
 }

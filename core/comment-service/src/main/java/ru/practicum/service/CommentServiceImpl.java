@@ -42,7 +42,7 @@ public class CommentServiceImpl implements CommentService {
             throw new NotFoundException(String.format("User with ID %s not found", authorId));
         }
         EventDto eventDto = eventClient.getById(eventId);
-        if (authorId == eventDto.getInitiatorId()) {
+        if (authorId == eventDto.getInitiator()) {
             throw new OperationForbiddenException("Инициатор мероприятия не может оставлять комментарии к нему");
         }
         if (!eventDto.getState().equals(EventState.PUBLISHED) ||

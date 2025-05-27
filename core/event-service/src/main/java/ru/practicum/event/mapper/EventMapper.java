@@ -26,6 +26,9 @@ public interface EventMapper {
     @Mapping(target = "createdOn", ignore = true)
     Event fromDto(EventCreateDto eventDto);
 
+    @Mapping(target = "confirmedRequests", ignore = true)
+    @Mapping(target = "views", ignore = true)
     @Mapping(target = "eventDate", dateFormat = "yyyy-MM-dd HH:mm:ss")
+    @Mapping(target = "initiator", source = "event.initiatorId")
     EventShortDto toEventShortDto(Event event);
 }
