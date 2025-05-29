@@ -1,6 +1,8 @@
 package ru.practicum.service;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -38,23 +41,43 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     @Override
     public CommentDto createComment(long authorId, long eventId, NewCommentDto newCommentDto) {
-        if(!userClient.exists(authorId)) {
-            throw new NotFoundException(String.format("User with ID %s not found", authorId));
-        }
-        EventDto eventDto = eventClient.getById(eventId);
-        if (authorId == eventDto.getInitiator()) {
-            throw new OperationForbiddenException("Инициатор мероприятия не может оставлять комментарии к нему");
-        }
-        if (!eventDto.getState().equals(EventState.PUBLISHED) ||
-                !LocalDateTime.parse(eventDto.getEventDate(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).isBefore(LocalDateTime.now())) {
-            throw new OperationForbiddenException("Мероприятие должно быть опубликовано, а дата его проведения в прошлом");
-        }
-        if (requestClient.getByRequesterIdAndEventIdAndStatus(authorId, eventId, RequestStatus.CONFIRMED) == null) {
-            throw new OperationForbiddenException("Комментарии может оставлять только подтвержденный участник мероприятия");
-        }
+        checkBeforeCreate(authorId,eventId);
+
         Comment comment = commentMapper.toComment(newCommentDto, authorId, eventId);
         commentRepository.save(comment);
         return commentMapper.toDto(comment);
+    }
+
+    public void checkBeforeCreate(long authorId, long eventId) {
+        try {
+            if(!userClient.exists(authorId)) {
+                throw new NotFoundException(String.format("User with ID %s not found", authorId));
+            }
+            EventDto eventDto = eventClient.getById(eventId);
+            if (authorId == eventDto.getInitiator()) {
+                throw new OperationForbiddenException("Инициатор мероприятия не может оставлять комментарии к нему");
+            }
+            if (!eventDto.getState().equals(EventState.PUBLISHED) ||
+                    !LocalDateTime.parse(eventDto.getEventDate(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).isBefore(LocalDateTime.now())) {
+                throw new OperationForbiddenException("Мероприятие должно быть опубликовано, а дата его проведения в прошлом");
+            }
+            if (requestClient.getByRequesterIdAndEventIdAndStatus(authorId, eventId, RequestStatus.CONFIRMED) == null) {
+                throw new OperationForbiddenException("Комментарии может оставлять только подтвержденный участник мероприятия");
+            }
+//        } catch (FeignException e) {
+//            if (e.status() == 409) {
+//                throw new OperationForbiddenException(e.getMessage());
+//            } else if (e.status() == 404) {
+//                throw new NotFoundException(e.getMessage());
+//            } else {
+//                throw new RuntimeException(e.getMessage());
+//            }
+//        }
+            // нужно только логировать, или все-таки ловить ошибки? если просто логировать,
+            // то при недоступных сервисах создаются комменты без валидации
+        } catch (FeignException e) {
+            log.error("Ошибка клиента:" + e.getMessage());
+        }
     }
 
     @Transactional
