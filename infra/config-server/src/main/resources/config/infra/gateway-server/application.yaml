@@ -30,11 +30,11 @@ spring:
           predicates:
             - Path=/admin/users/**
 
-  management:
-    endpoint:
-      gateway:
-        enabled: true # default value
-    endpoints:
-      web:
-        exposure:
-          include: gateway
+management:
+  endpoint:
+    gateway:
+      enabled: true # default value
+  endpoints:
+    web:
+      exposure:
+        include: gateway
