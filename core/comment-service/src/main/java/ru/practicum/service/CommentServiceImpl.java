@@ -64,19 +64,17 @@ public class CommentServiceImpl implements CommentService {
             if (requestClient.getByRequesterIdAndEventIdAndStatus(authorId, eventId, RequestStatus.CONFIRMED) == null) {
                 throw new OperationForbiddenException("Комментарии может оставлять только подтвержденный участник мероприятия");
             }
-//        } catch (FeignException e) {
-//            if (e.status() == 409) {
-//                throw new OperationForbiddenException(e.getMessage());
-//            } else if (e.status() == 404) {
-//                throw new NotFoundException(e.getMessage());
-//            } else {
-//                throw new RuntimeException(e.getMessage());
-//            }
-//        }
-            // нужно только логировать, или все-таки ловить ошибки? если просто логировать,
-            // то при недоступных сервисах создаются комменты без валидации
         } catch (FeignException e) {
-            log.error("Ошибка клиента:" + e.getMessage());
+            if (e.status() == 409) {
+                log.warn("Ошибка клиента:" + e.getMessage());// почему-то не логигируется этот случай по факту
+                throw new OperationForbiddenException(e.getMessage());
+            } else if (e.status() == 404) {
+                log.warn("Ошибка клиента:" + e.getMessage());// и этот тоже
+                throw new NotFoundException(e.getMessage());
+            } else {
+                log.warn("Ошибка клиента:" + e.getMessage());
+                throw new RuntimeException(e.getMessage());
+            }
         }
     }
 
