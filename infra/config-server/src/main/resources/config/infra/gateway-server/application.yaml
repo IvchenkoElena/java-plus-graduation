@@ -29,3 +29,5 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/admin/users/**
+
+  management.endpoints.web.exposure.include: gateway
