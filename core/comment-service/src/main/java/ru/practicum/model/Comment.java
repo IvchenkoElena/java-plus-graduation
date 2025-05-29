@@ -26,11 +26,9 @@ public class Comment {
     private String text;
 
     @Column(name = "event_id")
-    //    @ToString.Exclude
     private Long eventId;
 
     @Column(name = "author_id")
-//    @ToString.Exclude
     private Long authorId;
 
     private LocalDateTime created = LocalDateTime.now();
