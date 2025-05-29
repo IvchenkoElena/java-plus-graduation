@@ -16,6 +16,7 @@ public interface EventMapper {
     @Mapping(target = "eventDate", dateFormat = "yyyy-MM-dd HH:mm:ss")
     @Mapping(target = "views", ignore = true)
     @Mapping(target = "confirmedRequests", ignore = true)
+    @Mapping(target = "comments", ignore = true)
     EventDto toDto(Event event);
 
     @Mapping(target = "category", ignore = true)
