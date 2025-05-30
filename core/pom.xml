@@ -14,7 +14,11 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>main-service</module>
+        <module>event-service</module>
+        <module>interaction-api</module>
+        <module>comment-service</module>
+        <module>request-service</module>
+        <module>user-service</module>
     </modules>
 
 </project>
