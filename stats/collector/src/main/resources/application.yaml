@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: collector
+  config:
+    import: "configserver:"
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        serviceId: config-server
+      enabled: true
+      fail-fast: true
+      retry:
+        useRandomPolicy: true
+        max-interval: 6000
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${eureka.instance.hostname:localhost}:${eureka.instance.port:8761}/eureka/
