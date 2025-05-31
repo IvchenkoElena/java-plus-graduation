@@ -12,7 +12,7 @@ import ru.practicum.category.model.Category;
 import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.client.CommentClient;
 import ru.practicum.client.RequestClient;
-import ru.practicum.client.StatClient;
+//import ru.practicum.client.StatClient;
 import ru.practicum.client.UserClient;
 import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.enums.CommentStatus;
@@ -20,7 +20,7 @@ import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.dto.request.enums.RequestStatus;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.OperationForbiddenException;
-import ru.practicum.dto.ViewStats;
+//import ru.practicum.dto.ViewStats;
 import ru.practicum.dto.event.enums.AdminUpdateStateAction;
 import ru.practicum.dto.event.EntityParam;
 import ru.practicum.dto.event.EventAdminUpdateDto;
@@ -60,7 +60,7 @@ public class EventServiceImpl implements EventService {
 
     private final UserClient userClient;
     private final RequestClient requestClient;
-    private final StatClient statClient;
+//    private final StatClient statClient;
     private final CommentClient commentClient;
 
     @Override
@@ -278,9 +278,9 @@ public class EventServiceImpl implements EventService {
     private EventDto addAdvancedData(EventDto eventDto) {
         List<String> gettingUris = new ArrayList<>();
         gettingUris.add("/events/" + eventDto.getId());
-        Long views = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), gettingUris, true)
-                .stream().map(ViewStats::getHits).reduce(0L, Long::sum);
-        eventDto.setViews(views);
+//        Long views = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), gettingUris, true)
+//                .stream().map(ViewStats::getHits).reduce(0L, Long::sum);
+//        eventDto.setViews(views);
 
         Event event = eventRepository.findById(eventDto.getId())
                 .orElseThrow(() -> new NotFoundException(String.format("Event with id %s not found", eventDto.getId())));
@@ -309,7 +309,7 @@ public class EventServiceImpl implements EventService {
         List<CommentDto> comments = commentClient.getAllByEventIdInAndStatus(idsList, CommentStatus.PUBLISHED);
 
         List<String> uris = eventDtoList.stream().map(dto -> "/events/" + dto.getId()).toList();
-        List<ViewStats> viewStats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), uris, false);
+//        List<ViewStats> viewStats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), uris, false);
 
         List<EventDto> changedList = eventDtoList.stream()
                 .peek(dto -> dto.setConfirmedRequests(requests.stream()
@@ -318,10 +318,10 @@ public class EventServiceImpl implements EventService {
                 .peek(dto -> dto.setComments(comments.stream()
                         .filter(c -> Objects.equals(c.getEventId(), dto.getId()))
                         .toList()))
-                .peek(dto -> dto.setViews(viewStats.stream()
-                        .filter(v -> v.getUri().equals("/events/" + dto.getId()))
-                        .map(ViewStats::getHits)
-                        .reduce(0L, Long::sum)))
+//                .peek(dto -> dto.setViews(viewStats.stream()
+//                        .filter(v -> v.getUri().equals("/events/" + dto.getId()))
+//                        .map(ViewStats::getHits)
+//                        .reduce(0L, Long::sum)))
                 .toList();
 
         return changedList;
@@ -335,16 +335,16 @@ public class EventServiceImpl implements EventService {
         List<CommentDto> comments = commentClient.getAllByEventIdInAndStatus(idsList, CommentStatus.PUBLISHED);
 
         List<String> uris = eventShortDtoList.stream().map(dto -> "/events/" + dto.getId()).toList();
-        List<ViewStats> viewStats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), uris, false);
+//        List<ViewStats> viewStats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), uris, false);
 
         List<EventShortDto> changedList = eventShortDtoList.stream()
                 .peek(dto -> dto.setConfirmedRequests(requests.stream()
                         .filter(r -> Objects.equals(r.getEvent(), dto.getId()))
                         .count()))
-                .peek(dto -> dto.setViews(viewStats.stream()
-                        .filter(v -> v.getUri().equals("/events/" + dto.getId()))
-                        .map(ViewStats::getHits)
-                        .reduce(0L, Long::sum)))
+//                .peek(dto -> dto.setViews(viewStats.stream()
+//                        .filter(v -> v.getUri().equals("/events/" + dto.getId()))
+//                        .map(ViewStats::getHits)
+//                        .reduce(0L, Long::sum)))
                 .toList();
 
         return changedList;

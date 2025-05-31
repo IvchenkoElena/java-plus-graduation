@@ -1,0 +1,30 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: collector
+
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: serializer.GeneralAvroSerializer
+    topics:
+      actions-topic: stats.user-actions.v1
+
+grpc:
+  server:
+    port: 0
+  client:
+    collector:
+      address: 'discovery:///collector'
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+
+logging:
+  level:
+    org:
+      zalando:
+        logbook: TRACE

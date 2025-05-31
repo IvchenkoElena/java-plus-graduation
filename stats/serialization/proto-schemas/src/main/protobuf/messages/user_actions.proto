@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package user_actions;
+
+import "google/protobuf/timestamp.proto";
+option java_multiple_files = true;
+option java_package = "ru.practicum.grpc.stats.actions";
+
+// Перечисление типов действий пользователя
+enum ActionTypeProto {
+    ACTION_VIEW = 0;    // Просмотр страницы мероприятия
+    ACTION_REGISTER = 1;// Заявка на участие
+    ACTION_LIKE = 2;    // Положительная оценка/лайк
+}
+
+// Сообщение о действии пользователя
+message UserActionProto {
+    int64  user_id = 1;           // Идентификатор пользователя
+    int64  event_id = 2;         // Идентификатор мероприятия
+    ActionTypeProto action_type = 3; // Тип действия
+    google.protobuf.Timestamp timestamp = 4; // Временная метка действия
+}
