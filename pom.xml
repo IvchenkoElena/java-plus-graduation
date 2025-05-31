@@ -36,8 +36,7 @@
 		<grpc-spring-boot-starter.version>3.1.0.RELEASE</grpc-spring-boot-starter.version>
 		<protobuf.version>3.23.4</protobuf.version>
 		<annotations.version>24.0.0</annotations.version>
-		<avro-schemas.version>1.0-SNAPSHOT</avro-schemas.version>
-		<proto-schemas.version>1.0-SNAPSHOT</proto-schemas.version>
+
 		<groupId>javax.validation</groupId>
 		<validation-api.version>2.0.1.Final</validation-api.version>
 		<project.org.mapstruct.mapstruct.version>1.6.0</project.org.mapstruct.mapstruct.version>
@@ -67,18 +66,6 @@
 				<groupId>org.apache.avro</groupId>
 				<artifactId>avro</artifactId>
 				<version>${avro.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>ru.yandex.practicum</groupId>
-				<artifactId>avro-schemas</artifactId>
-				<version>${avro-schemas.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>ru.yandex.practicum</groupId>
-				<artifactId>proto-schemas</artifactId>
-				<version>${proto-schemas.version}</version>
 			</dependency>
 
 			<dependency>

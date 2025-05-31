@@ -29,17 +29,16 @@ public class RecommendationServiceImpl implements RecommendationService {
         log.info("Recommendations for user: {}", requestProto.getUserId());
         long userId = requestProto.getUserId();
         int maxResult = requestProto.getMaxResults();
-        //из ТЗ  "Выгрузить мероприятия, с которыми пользователь уже взаимодействовал.
+        // Выгрузить мероприятия, с которыми пользователь уже взаимодействовал.
         List<UserAction> userActionList = new ArrayList<>(userActionRepository.findByUserId(userId));
         // Если пользователь ещё не взаимодействовал ни с одним мероприятием, то рекомендовать нечего —
-        // возвращается пустой список."
+        // возвращается пустой список
         if (userActionList.isEmpty()) {
             return Collections.emptyList();
         }
         // При этом отсортировать их по дате взаимодействия от новых к старым и ограничить N взаимодействиями.
         userActionList.sort((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()));
 
-        //Что такое "N" в ТЗ не написано, поэтому задаю переменной
         int n = 10;
         List<UserAction> userActionListLimited = userActionList.stream().limit(n).toList();
 
@@ -73,8 +72,8 @@ public class RecommendationServiceImpl implements RecommendationService {
         List<Long> unwatchedSotedLimitedEventsList = eventSimilarityList.stream()
                 .collect(Collectors.flatMapping(
                         es -> Stream.of(es.getEventA(), es.getEventB()),
-                        Collectors.toList()
-                )).stream()
+                        Collectors.toList()))
+                .stream()
                 .filter(interactedByUserAllEvents::contains)
                 .limit(n)
                 .toList();
@@ -175,7 +174,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                     .build();
             recommendedEventList.add(eventProto);
         }
-        log.info("МЕТОД getInteractionsCount закончил работу");
+        log.info("Метод getInteractionsCount закончил работу");
         return recommendedEventList;
     }
 }

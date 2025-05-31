@@ -1,5 +1,6 @@
 server:
   port: 0
+
 spring:
   application:
     name: collector
@@ -21,7 +22,6 @@ grpc:
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext
-
 
 logging:
   level:

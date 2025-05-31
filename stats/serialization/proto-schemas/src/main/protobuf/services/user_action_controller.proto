@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package telemetry.service;
+package stats.service.collector;
 
 import "google/protobuf/empty.proto";
 import "messages/user_actions.proto";

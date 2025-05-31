@@ -5,9 +5,9 @@ spring:
   application:
     name: analyzer
   datasource:
-    url: jdbc:postgresql://localhost:25432/ewm-db
+    url: jdbc:postgresql://localhost:15432/stats-db
     driver-class-name: "org.postgresql.Driver"
-    username: "ewm-db"
+    username: "stats-db"
     password: "secret"
   sql:
     init:
@@ -23,11 +23,12 @@ spring:
       hibernate:
         default_schema: analyzer_schema
         format_sql: true
+
   kafka:
     consumer-user-actions:
       bootstrap-servers: localhost:9092
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: ru.yandex.practicum.deserializer.UserActionDeserializer
+      value-deserializer: deserializer.UserActionDeserializer
       client-id: user-consumer
       group-id: group-user
       max-poll-records: 100
@@ -37,7 +38,7 @@ spring:
     consumer-events-similarity:
       bootstrap-servers: localhost:9092
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: ru.yandex.practicum.deserializer.EventSimilarityDeserializer
+      value-deserializer: deserializer.EventSimilarityDeserializer
       client-id: similarity-consumer
       group-id: group-similarity
       max-poll-records: 100
@@ -47,17 +48,23 @@ spring:
     producer:
       bootstrap-servers: localhost:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: ru.yandex.practicum.serializer.AvroSerializer
+      value-serializer: serializer.GeneralAvroSerializer
     topics:
       actions-topic: stats.user-actions.v1
       events-similarity-topic: stats.events-similarity.v1
 
 grpc:
-  analyzer: # <- должно соответствовать значению в @GrpcClient
-    address: 'discovery:///analyzer' # адрес gRPC-сервиса
-    enableKeepAlive: true
-    keepAliveWithoutCalls: true
-    negotiationType: plaintext
+  server:
+    port: 0
+  client:
+    analyzer: # <- должно соответствовать значению в @GrpcClient
+      address: 'discovery:///analyzer' # адрес gRPC-сервиса
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+
 logging:
   level:
-    io.grpc: DEBUG
+    org:
+      zalando:
+        logbook: TRACE
