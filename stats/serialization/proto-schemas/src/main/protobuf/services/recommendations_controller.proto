@@ -1,20 +1,19 @@
-//syntax = "proto3";
+syntax = "proto3";
 
-//import "messages/user_predictions.proto";
+import "messages/user_predictions.proto";
 
-//option java_package = "ru.practicum";
+option java_package = "ru.practicum";
 
-//service RecommendationsController {
+service RecommendationsController {
 
   // Возвращает поток рекомендованных мероприятий для указанного пользователя
-  //rpc GetRecommendationsForUser (UserPredictionsRequestProto) returns (stream RecommendedEventProto);
+  rpc GetRecommendationsForUser (recommendation_messages.UserPredictionsRequestProto) returns (stream recommendation_messages.RecommendedEventProto);
 
   // Возвращает поток мероприятий, с которыми не взаимодействовал этот пользователь,
   // но которые максимально похожи на указанное мероприятие
- // rpc GetSimilarEvents (SimilarEventsRequestProto) returns (stream RecommendedEventProto);
+  rpc GetSimilarEvents (recommendation_messages.SimilarEventsRequestProto) returns (stream recommendation_messages.RecommendedEventProto);
 
   // Получает идентификаторы мероприятий и возвращает их поток с суммой максимальных весов действий
   // каждого пользователя с этими мероприятиями
-  //rpc GetInteractionsCount (InteractionsCountRequestProto) returns (stream RecommendedEventProto);
-
-//}
+  rpc GetInteractionsCount (recommendation_messages.InteractionsCountRequestProto) returns (stream recommendation_messages.RecommendedEventProto);
+}

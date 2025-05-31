@@ -1,0 +1,63 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: analyzer
+  datasource:
+    url: jdbc:postgresql://localhost:25432/ewm-db
+    driver-class-name: "org.postgresql.Driver"
+    username: "ewm-db"
+    password: "secret"
+  sql:
+    init:
+      mode: always
+  output:
+    ansi:
+      enabled: ALWAYS
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        default_schema: analyzer_schema
+        format_sql: true
+  kafka:
+    consumer-user-actions:
+      bootstrap-servers: localhost:9092
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: ru.yandex.practicum.deserializer.UserActionDeserializer
+      client-id: user-consumer
+      group-id: group-user
+      max-poll-records: 100
+      fetch-max-bytes: 3072000
+      max-partition-fetch-bytes: 307200
+      consume-attempts-timeout-ms: 1000
+    consumer-events-similarity:
+      bootstrap-servers: localhost:9092
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: ru.yandex.practicum.deserializer.EventSimilarityDeserializer
+      client-id: similarity-consumer
+      group-id: group-similarity
+      max-poll-records: 100
+      fetch-max-bytes: 3072000
+      max-partition-fetch-bytes: 307200
+      consume-attempts-timeout-ms: 1000
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: ru.yandex.practicum.serializer.AvroSerializer
+    topics:
+      actions-topic: stats.user-actions.v1
+      events-similarity-topic: stats.events-similarity.v1
+
+grpc:
+  analyzer: # <- должно соответствовать значению в @GrpcClient
+    address: 'discovery:///analyzer' # адрес gRPC-сервиса
+    enableKeepAlive: true
+    keepAliveWithoutCalls: true
+    negotiationType: plaintext
+logging:
+  level:
+    io.grpc: DEBUG
