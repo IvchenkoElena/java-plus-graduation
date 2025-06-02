@@ -53,6 +53,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -288,10 +289,8 @@ public class EventServiceImpl implements EventService {
         List<String> gettingUris = new ArrayList<>();
         gettingUris.add("/events/" + eventDto.getId());
 
-        List<RecommendedEventProto> proto = recommendationClient.getInteractionsCount(
-                getInteractionsRequest(List.of(eventDto.getId()))
-        );
-        Double rating = proto.isEmpty() ? 0.0 : proto.getFirst().getScore();
+        Map<Long, Double> proto = recommendationClient.getInteractionsCount(List.of(eventDto.getId()));
+        Double rating = proto.isEmpty() ? 0.0 : proto.get(eventDto.getId());
         eventDto.setRating(rating);
 
         Event event = eventRepository.findById(eventDto.getId())
@@ -354,10 +353,12 @@ public class EventServiceImpl implements EventService {
     public List<EventRecommendationDto> getRecommendations(long userId) {
         log.info("Началось получение рекомендаций для пользователя {}", userId);
         int size = 10;
-        List<RecommendedEventProto> recommendedEvents = recommendationClient.getRecommendationsForUser(UserPredictionsRequestProto.newBuilder()
-                .setUserId(userId)
-                .setMaxResults(size)
-                .build());
+        List<RecommendedEventProto> recommendedEvents = recommendationClient.getRecommendations(userId, size);
+
+//        List<RecommendedEventProto> recommendedEvents = recommendationClient.getRecommendationsForUser(UserPredictionsRequestProto.newBuilder()
+//                .setUserId(userId)
+//                .setMaxResults(size)
+//                .build());
 
         List<EventRecommendationDto> eventRecommendationDtoList = new ArrayList<>();
         if (!recommendedEvents.isEmpty()) {

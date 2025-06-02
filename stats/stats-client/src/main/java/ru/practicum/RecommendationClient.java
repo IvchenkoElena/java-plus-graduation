@@ -1,7 +1,5 @@
 package ru.practicum;
 
-//import io.grpc.Status;
-//import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
@@ -10,15 +8,10 @@ import ru.practicum.grpc.stats.recommendation.RecommendedEventProto;
 import ru.practicum.grpc.stats.recommendation.SimilarEventsRequestProto;
 import ru.practicum.grpc.stats.recommendation.UserPredictionsRequestProto;
 
-//import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-//import java.util.Spliterator;
-//import java.util.Spliterators;
-//import java.util.stream.Stream;
-//import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
