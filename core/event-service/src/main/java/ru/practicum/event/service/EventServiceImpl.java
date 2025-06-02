@@ -44,9 +44,7 @@ import ru.practicum.event.repository.EventRepository;
 import ru.practicum.event.repository.LocationRepository;
 import ru.practicum.grpc.stats.actions.ActionTypeProto;
 import ru.practicum.grpc.stats.actions.UserActionProto;
-import ru.practicum.grpc.stats.recommendation.InteractionsCountRequestProto;
 import ru.practicum.grpc.stats.recommendation.RecommendedEventProto;
-import ru.practicum.grpc.stats.recommendation.UserPredictionsRequestProto;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -286,9 +284,6 @@ public class EventServiceImpl implements EventService {
     }
 
     private EventDto addAdvancedData(EventDto eventDto) {
-        List<String> gettingUris = new ArrayList<>();
-        gettingUris.add("/events/" + eventDto.getId());
-
         Map<Long, Double> proto = recommendationClient.getInteractionsCount(List.of(eventDto.getId()));
         Double rating = proto.isEmpty() ? 0.0 : proto.get(eventDto.getId());
         eventDto.setRating(rating);
@@ -304,10 +299,6 @@ public class EventServiceImpl implements EventService {
         eventDto.setComments(comments);
 
         return eventDto;
-    }
-
-    private InteractionsCountRequestProto getInteractionsRequest(List<Long> eventId) {
-        return InteractionsCountRequestProto.newBuilder().addAllEventId(eventId).build();
     }
 
     private boolean isEventAvailable(Event event) {
