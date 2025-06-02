@@ -4,6 +4,7 @@ import ru.practicum.dto.event.EntityParam;
 import ru.practicum.dto.event.EventAdminUpdateDto;
 import ru.practicum.dto.event.EventCreateDto;
 import ru.practicum.dto.event.EventDto;
+import ru.practicum.dto.event.EventRecommendationDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.EventUpdateDto;
 import ru.practicum.dto.event.SearchEventsParam;
@@ -29,4 +30,9 @@ public interface EventService {
     EventDto getEvent(Long eventId);
 
     EventDto getPublishedEvent(Long id);
+
+    void addLike(Long eventId, Long userId);
+
+    List<EventRecommendationDto> getRecommendations(long userId);
+
 }

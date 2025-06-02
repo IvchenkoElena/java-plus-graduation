@@ -1,7 +1,8 @@
 package ru.practicum;
 
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import com.google.common.collect.Lists;
+//import io.grpc.Status;
+//import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
@@ -10,17 +11,34 @@ import ru.practicum.grpc.stats.recommendation.RecommendedEventProto;
 import ru.practicum.grpc.stats.recommendation.SimilarEventsRequestProto;
 import ru.practicum.grpc.stats.recommendation.UserPredictionsRequestProto;
 
-import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+//import java.util.Iterator;
+import java.util.List;
+//import java.util.Spliterator;
+//import java.util.Spliterators;
+//import java.util.stream.Stream;
+//import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
 public class RecommendationClient {
     @GrpcClient("analyzer")
-    private RecommendationsControllerGrpc.RecommendationsControllerBlockingStub analyzerStub;
+    RecommendationsControllerGrpc.RecommendationsControllerBlockingStub client;
+
+    public List<RecommendedEventProto> getInteractionsCount(InteractionsCountRequestProto request) {
+        return Lists.newArrayList(client.getInteractionsCount(request));
+    }
+
+    public List<RecommendedEventProto> getSimilarEvent(SimilarEventsRequestProto request) {
+        return Lists.newArrayList(client.getSimilarEvents(request));
+    }
+
+    public List<RecommendedEventProto> getRecommendationsForUser(UserPredictionsRequestProto request) {
+        return Lists.newArrayList(client.getRecommendationsForUser(request));
+    }
+}
+
+
+    /*private RecommendationsControllerGrpc.RecommendationsControllerBlockingStub analyzerStub;
 
     public Stream<RecommendedEventProto> getRecommendedEventsForUser(
             long userId, int size) {
@@ -93,4 +111,4 @@ public class RecommendationClient {
         );
     }
 
-}
+}*/

@@ -21,3 +21,11 @@ spring:
     driver-class-name: "org.postgresql.Driver"
     username: "ewm-db"
     password: "secret"
+
+grpc:
+  client:
+    collector:
+      address: 'discovery:///collector'
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext

@@ -22,6 +22,7 @@ public class KafkaConfig {
     public Properties getConsumerProperties() {
         Properties properties = new Properties();
         properties.put(ConsumerConfig.GROUP_ID_CONFIG, appConfig.getConsumer().getGroupId());
+        properties.put(ConsumerConfig.CLIENT_ID_CONFIG, appConfig.getConsumer().getClientId());
         properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, appConfig.getConsumer().getBootstrapServers());
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, appConfig.getConsumer().getKeyDeserializer());
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, appConfig.getConsumer().getValueDeserializer());
