@@ -1,26 +1,25 @@
 spring:
   application:
     name: analyzer
-  datasource:
-    url: jdbc:postgresql://localhost:15432/stats-db
-    driver-class-name: "org.postgresql.Driver"
-    username: "stats-db"
-    password: "secret"
-  sql:
-    init:
-      mode: always
   output:
     ansi:
-      enabled: ALWAYS
+      enabled: always
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
         default_schema: analyzer_schema
         format_sql: true
-
+  sql:
+    init:
+      mode: always
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:6543/ewm_analyzer
+    username: main
+    password: main
   kafka:
     consumer-user-actions:
       bootstrap-servers: localhost:9092
