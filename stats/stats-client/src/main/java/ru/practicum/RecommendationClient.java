@@ -3,6 +3,7 @@ package ru.practicum;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
+import ru.practicum.ewm.stats.services.RecommendationsControllerGrpc;
 import ru.practicum.grpc.stats.recommendation.InteractionsCountRequestProto;
 import ru.practicum.grpc.stats.recommendation.RecommendedEventProto;
 import ru.practicum.grpc.stats.recommendation.SimilarEventsRequestProto;
