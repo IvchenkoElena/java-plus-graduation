@@ -6,5 +6,5 @@ import ru.practicum.ewm.stats.avro.UserActionAvro;
 import java.util.List;
 
 public interface AggregatorService {
-    List<EventSimilarityAvro> getSimilarities(UserActionAvro actionAvro);
+    List<EventSimilarityAvro> aggregationUserAction(UserActionAvro actionAvro);
 }

@@ -94,7 +94,7 @@ public class AggregationStarter {
 
         log.info("топик = {}, партиция = {}, смещение = {}, значение: {}\n",
                 record.topic(), record.partition(), record.offset(), record.value());
-        List<EventSimilarityAvro> result = aggregatorService.getSimilarities(record.value());
+        List<EventSimilarityAvro> result = aggregatorService.aggregationUserAction(record.value());
         log.info("Сервис aggregatorService.getSimilarities отработал= {}", result);
         if (!result.isEmpty()) {
             log.info("Отправляем результаты расчета: {}", result);

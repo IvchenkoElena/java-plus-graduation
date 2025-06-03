@@ -1,6 +1,9 @@
 package ru.practicum.repository;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.practicum.model.UserAction;
 
@@ -10,10 +13,14 @@ import java.util.Set;
 
 @Repository
 public interface UserActionRepository extends JpaRepository<UserAction, Long> {
-    Optional<UserAction> findByUserIdAndEventId(Long userId, Long eventId);
+    Boolean existsByEventIdAndUserId(Long eventId, Long userId);
 
-    Set<UserAction> findByUserId(Long userId);
+    Optional<UserAction> findByEventIdAndUserId(Long eventId, Long userId);
 
-    List<UserAction> findByEventIdIsIn(List<Long> eventIds);
+    @Query("select COALESCE(SUM(u.weight), 0) from UserAction as u where u.eventId = :eventId")
+    Double countSumWeightByEventId(@Param("eventId") Long eventId);
 
+    List<UserAction> findAllByUserId(Long userId, PageRequest pageRequest);
+
+    List<UserAction> findAllByEventIdInAndUserId(Set<Long> viewedEvents, Long userId);
 }

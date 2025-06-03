@@ -4,7 +4,7 @@ protocol EventSimilarityProtocol {
 	record EventSimilarityAvro {
 		long eventA;
 		long eventB;
-		float score;
+		double score;
 		timestamp_ms timestamp;
 	}
 }

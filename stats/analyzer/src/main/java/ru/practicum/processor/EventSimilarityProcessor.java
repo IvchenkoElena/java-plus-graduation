@@ -1,76 +1,81 @@
 package ru.practicum.processor;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
-import ru.practicum.config.KafkaTopics;
-import ru.practicum.kafka.ConfigKafkaProperties;
-import ru.practicum.service.EventSimilarityService;
+import ru.practicum.handler.EventSimilarityHandler;
+import ru.practicum.kafka.KafkaClient;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class EventSimilarityProcessor implements Runnable {
-    @Value(value = "${spring.kafka.consumer-events-similarity.consume-attempts-timeout-ms}")
-    private Duration consumeAttemptTimeout;
-    private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();// снимок состояния
-    private final ConfigKafkaProperties configClass;
-    private final EventSimilarityService eventSimilarityService;
-    private final KafkaTopics kafkaTopics;
+    private final Consumer<Long, EventSimilarityAvro> similarityConsumer;
+    private final EventSimilarityHandler similarityHandler;
+
+    private static final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
+    private static final Duration CONSUME_ATTEMPT_TIMEOUT = Duration.ofMillis(1000);
+
+    @Value("${analyzer.kafka.topics.events-similarity}")
+    private String eventsSimilarityTopic;
+
+    public EventSimilarityProcessor(KafkaClient kafkaClient, EventSimilarityHandler similarityHandler) {
+        this.similarityConsumer = kafkaClient.getKafkaEventSimilarityConsumer();
+        this.similarityHandler = similarityHandler;
+    }
 
     @Override
     public void run() {
-        Properties config = configClass.getSnapshotProperites();
-        KafkaConsumer<String, EventSimilarityAvro> consumer = new KafkaConsumer<>(config);
-        Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
-
+        Runtime.getRuntime().addShutdownHook(new Thread(similarityConsumer::wakeup));
         try {
-            consumer.subscribe(List.of(kafkaTopics.getEventsSimilarityTopic()));
+            similarityConsumer.subscribe(List.of(eventsSimilarityTopic));
             while (true) {
-                ConsumerRecords<String, EventSimilarityAvro> records = consumer.poll(consumeAttemptTimeout);
-                int count = 0;
-                for (ConsumerRecord<String, EventSimilarityAvro> record : records) {
-                    // обрабатываем очередную запись
-                    handleRecord(record);
-                    // фиксируем оффсеты обработанных записей, если нужно
-                    manageOffsets(record, count, consumer);
-                    count++;
+                ConsumerRecords<Long, EventSimilarityAvro> records = similarityConsumer.poll(CONSUME_ATTEMPT_TIMEOUT);
+                if (!records.isEmpty()) {
+                    int count = 0;
+                    for (ConsumerRecord<Long, EventSimilarityAvro> record : records) {
+                        EventSimilarityAvro avro = record.value();
+
+                        log.info("{}: отправка сообщения в handler", EventSimilarityProcessor.class.getSimpleName());
+                        similarityHandler.handleEventSimilarity(avro);
+
+                        manageOffsets(record, count, similarityConsumer);
+                        count++;
+                    }
+                    similarityConsumer.commitAsync();
                 }
-                // фиксируем максимальный оффсет обработанных записей
-                consumer.commitAsync();
             }
-        } catch (WakeupException | InterruptedException ignores) {
-            // игнорируем - закрываем консьюмер и продюсер в блоке finally
+        } catch (WakeupException ignored) {
+
         } catch (Exception e) {
-            log.error("Ошибка во время обработки событий Snapshots", e);
+            log.error("{}: Ошибка во время обработки EventSimilarity", EventSimilarityProcessor.class.getSimpleName(), e);
         } finally {
-
             try {
-                consumer.commitSync(currentOffsets);
+                similarityConsumer.commitSync();
             } finally {
-                log.info("Закрываем консьюмер");
-                consumer.close();
-
+                log.info("{}: Закрываем консьюмер", EventSimilarityProcessor.class.getSimpleName());
+                similarityConsumer.close();
             }
         }
     }
 
-    private void manageOffsets(ConsumerRecord<String, EventSimilarityAvro> record, int count,
-                               KafkaConsumer<String, EventSimilarityAvro> consumer) {
+    private static void manageOffsets(
+            ConsumerRecord<Long, EventSimilarityAvro> record,
+            int count,
+            Consumer<Long, EventSimilarityAvro> consumer
+    ) {
+        // обновляем текущий оффсет для топика-партиции
         currentOffsets.put(
                 new TopicPartition(record.topic(), record.partition()),
                 new OffsetAndMetadata(record.offset() + 1)
@@ -83,12 +88,5 @@ public class EventSimilarityProcessor implements Runnable {
                 }
             });
         }
-    }
-
-    private void handleRecord(ConsumerRecord<String, EventSimilarityAvro> record) throws InterruptedException {
-
-        log.info("топик = {}, партиция = {}, смещение = {}, значение: {}\n",
-                record.topic(), record.partition(), record.offset(), record.value());
-        eventSimilarityService.handleEventSimilarity(record.value());
     }
 }

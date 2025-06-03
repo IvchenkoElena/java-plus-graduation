@@ -1,3 +1,102 @@
+#spring:
+#  application:
+#    name: analyzer
+#  output:
+#    ansi:
+#      enabled: always
+#  jpa:
+#    hibernate:
+#      ddl-auto: none
+#    show-sql: true
+#    properties:
+#      hibernate:
+#        default_schema: analyzer_schema
+#        format_sql: true
+#  sql:
+#    init:
+#      mode: always
+#  datasource:
+#    driverClassName: org.postgresql.Driver
+#    url: jdbc:postgresql://localhost:6543/ewm_analyzer
+#    username: main
+#    password: main
+#  kafka:
+#    consumer:
+#      user-action:
+#        properties:
+#          client.id: analyzerUserActionConsumer
+#          group.id: analyzer-user-action
+#          bootstrap.servers: localhost:9092
+#          key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
+#          value.deserializer: ru.practicum.ewm.deserializer.UserActionAvroDeserializer
+#          enable.auto.commit: false
+##          bootstrap-servers: localhost:9092
+##          key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+##          value-deserializer: deserializer.UserActionDeserializer
+##          client-id: user-consumer
+##          group-id: group-user
+##          max-poll-records: 100
+##          fetch-max-bytes: 3072000
+##          max-partition-fetch-bytes: 307200
+##          consume-attempts-timeout-ms: 1000
+#    event-similarity:
+#      properties:
+#        client.id: analyzerEventSimilarityConsumer
+#        group.id: analyzer-event-similarity
+#        bootstrap.servers: localhost:9092
+#        key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
+#        value.deserializer: ru.practicum.ewm.deserializer.EventSimilarityAvroDeserializer
+#        enable.auto.commit: false
+#
+##        bootstrap-servers: localhost:9092
+##        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+##        value-deserializer: deserializer.EventSimilarityDeserializer
+##        client-id: similarity-consumer
+##        group-id: group-similarity
+##        max-poll-records: 100
+##        fetch-max-bytes: 3072000
+##        max-partition-fetch-bytes: 307200
+##        consume-attempts-timeout-ms: 1000
+#    producer:
+#      bootstrap-servers: localhost:9092
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: serializer.GeneralAvroSerializer
+#    topics:
+#      actions-topic: stats.user-actions.v1
+#      events-similarity-topic: stats.events-similarity.v1
+#
+#grpc:
+#  server:
+#    port: 0
+#  client:
+#    analyzer: # <- должно соответствовать значению в @GrpcClient
+#      address: 'discovery:///analyzer' # адрес gRPC-сервиса
+#      enableKeepAlive: true
+#      keepAliveWithoutCalls: true
+#      negotiationType: plaintext
+#
+#application:
+#  action-weight:
+#    view: 0.4
+#    register: 0.8
+#    like: 1.0
+#
+#logging:
+#  level:
+#    org:
+#      zalando:
+#        logbook: TRACE
+
+grpc:
+  server:
+    port: 0
+  client:
+    analyzer: # <- должно соответствовать значению в @GrpcClient
+      address: 'discovery:///analyzer' # адрес gRPC-сервиса
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+    negotiationType: plaintext
+
 spring:
   application:
     name: analyzer
@@ -20,47 +119,32 @@ spring:
     url: jdbc:postgresql://localhost:6543/ewm_analyzer
     username: main
     password: main
+
+analyzer:
   kafka:
-    consumer-user-actions:
-      bootstrap-servers: localhost:9092
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: deserializer.UserActionDeserializer
-      client-id: user-consumer
-      group-id: group-user
-      max-poll-records: 100
-      fetch-max-bytes: 3072000
-      max-partition-fetch-bytes: 307200
-      consume-attempts-timeout-ms: 1000
-    consumer-events-similarity:
-      bootstrap-servers: localhost:9092
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: deserializer.EventSimilarityDeserializer
-      client-id: similarity-consumer
-      group-id: group-similarity
-      max-poll-records: 100
-      fetch-max-bytes: 3072000
-      max-partition-fetch-bytes: 307200
-      consume-attempts-timeout-ms: 1000
-    producer:
-      bootstrap-servers: localhost:9092
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: serializer.GeneralAvroSerializer
+    consumer:
+      user-action:
+        properties:
+          client.id: analyzerUserActionConsumer
+          group.id: analyzer-user-action
+          bootstrap.servers: localhost:9092
+          key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
+          value.deserializer: deserializer.UserActionDeserializer
+          enable.auto.commit: false
+      event-similarity:
+        properties:
+          client.id: analyzerEventSimilarityConsumer
+          group.id: analyzer-event-similarity
+          bootstrap.servers: localhost:9092
+          key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
+          value.deserializer: deserializer.EventSimilarityDeserializer
+          enable.auto.commit: false
     topics:
-      actions-topic: stats.user-actions.v1
-      events-similarity-topic: stats.events-similarity.v1
+      user-actions: stats.user-actions.v1
+      events-similarity: stats.events-similarity.v1
 
-grpc:
-  server:
-    port: 0
-  client:
-    analyzer: # <- должно соответствовать значению в @GrpcClient
-      address: 'discovery:///analyzer' # адрес gRPC-сервиса
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
-
-logging:
-  level:
-    org:
-      zalando:
-        logbook: TRACE
+application:
+  action-weight:
+    view: 0.4
+    register: 0.8
+    like: 1.0
