@@ -16,8 +16,11 @@ import java.util.Map;
 @Service
 @AllArgsConstructor
 public class AggregatorServiceImpl implements AggregatorService {
+    // матрица весов действий пользователей c мероприятиями Map<Event, Map<User, Weight>>
     private Map<Long, Map<Long, Double>> eventUserWeight = new HashMap<>();
+    // общие суммы весов каждого из мероприятий Map<Event, S>
     private Map<Long, Double> eventWeightSum = new HashMap<>();
+    // сумма минимальных весов для каждой пары мероприятий Map<Event, Map<Event, S_min>>
     private Map<Long, Map<Long, Double>> twoEventsMinSum = new HashMap<>();
     private UserActionWeight userActionWeight;
 
@@ -27,7 +30,7 @@ public class AggregatorServiceImpl implements AggregatorService {
         Double weightDiff = getDiffEventUserWeight(action);
         if (weightDiff.equals(0.0)) {
             log.info("Вес действия пользователя не изменился, возвращаем пустой список");
-            return new ArrayList<>();
+            return result;
         }
         updateEventUserWeight(action);
         updateEventWeightSum(action, weightDiff);
@@ -43,31 +46,90 @@ public class AggregatorServiceImpl implements AggregatorService {
         }
         if (eventIdsForCalculate.isEmpty()) {
             log.info("Не найдено событий для расчета сходства, возвращаем пустой список");
-            return new ArrayList<>();
+            return result;
         }
         log.info("События для расчета сходства: {}", eventIdsForCalculate);
 
-        updateTwoEventsMinSum(action, weightDiff, eventIdsForCalculate);
-
         log.info("Расчитываем сходство для события {}, с событиями: {}", action.getEventId(), eventIdsForCalculate);
-        for (Long id : eventIdsForCalculate) {
-            Long first = Math.min(action.getEventId(), id);
-            Long second = Math.max(action.getEventId(), id);
+        for (Long otherEventId : eventIdsForCalculate) {
+            Long first = Math.min(action.getEventId(), otherEventId);
+            Long second = Math.max(action.getEventId(), otherEventId);
 
-            Double similarity = twoEventsMinSum.get(first).get(second) /
-                    (Math.sqrt(eventWeightSum.get(first)) * Math.sqrt(eventWeightSum.get(second)));
-            log.info("Схожесть события {} и {} равна: {}", first, second, similarity);
-            EventSimilarityAvro eventSimilarity = EventSimilarityAvro.newBuilder()
-                    .setEventA(first)
-                    .setEventB(second)
-                    .setScore(similarity)
-                    .setTimestamp(action.getTimestamp())
-                    .build();
+            updateTwoEventsMinSum(first, second, action, otherEventId, weightDiff);
+            // убрала второе прохождение по циклу
+            EventSimilarityAvro eventSimilarity = calculateSimilarity(first, second, action);
+            // вынесла в отдельный метод
+
             result.add(eventSimilarity);
         }
 
         log.info("Результат расчета: {}", result);
         return result;
+    }
+
+    private EventSimilarityAvro calculateSimilarity(Long first, Long second, UserActionAvro action) {
+        Double similarity = twoEventsMinSum.get(first).get(second) /
+                (Math.sqrt(eventWeightSum.get(first)) * Math.sqrt(eventWeightSum.get(second)));
+        log.info("Схожесть события {} и {} равна: {}", first, second, similarity);
+        return EventSimilarityAvro.newBuilder()
+                .setEventA(first)
+                .setEventB(second)
+                .setScore(similarity)
+                .setTimestamp(action.getTimestamp())
+                .build();
+    }
+
+    private void updateTwoEventsMinSum(Long first, Long second, UserActionAvro action, Long otherEventId, Double weightDiff) {
+        Long userId = action.getUserId();
+        Long eventId = action.getEventId();
+        Double eventWeight = eventUserWeight.get(eventId).getOrDefault(userId, 0.0);
+        log.info("Расчитываем минимальную сумму для события {}, с событием: {}", eventId, otherEventId);
+
+        Double oldEventWeight = eventWeight - weightDiff;
+        log.info("Старый вес: {}, для события {}, пользователя {}", oldEventWeight, eventId, userId);
+
+        Double otherEventWeight = eventUserWeight.get(otherEventId).getOrDefault(userId, 0.0);
+        log.info("Вес: {}, для события {}, пользователя {}", otherEventWeight, otherEventId, userId);
+        if (otherEventWeight.equals(0.0)) {
+            log.info("Вес действия для события {} равен 0, не делаем расчет", otherEventId);
+            return;
+        }
+        Map<Long, Double> map = twoEventsMinSum.get(first);
+        if (map == null || map.isEmpty()) {
+            twoEventsMinSum.computeIfAbsent(first, k -> new HashMap<>())
+                    .put(second, Math.min(eventWeight, otherEventWeight));
+            log.info("Минимальная сумма еще не расчитывалась, сохраняем новую: first - {}, second - {}, sum - {}",
+                    first, second, Math.min(eventWeight, otherEventWeight));
+            return;
+        }
+        Double oldSum = map.get(second);
+        log.info("Старая минимальная сумма {}, для событий {} и {}", oldSum, eventId, otherEventId);
+        if (oldSum == null) {
+            twoEventsMinSum.computeIfAbsent(first, k -> new HashMap<>())
+                    .put(second, Math.min(eventWeight, otherEventWeight));
+            log.info("Минимальная сумма еще не расчитывалась, сохраняем новую: first - {}, second - {}, sum - {}",
+                    first, second, Math.min(eventWeight, otherEventWeight));
+            return;
+        }
+
+        if (eventWeight >= otherEventWeight) {
+            log.info("eventWeight {} >= otherEventWeight {}", eventWeight, otherEventWeight);
+            if (oldEventWeight >= otherEventWeight) {
+                log.info("oldEventWeight {} >= otherEventWeight {}, сумму обновлять не нужно", oldEventWeight, otherEventWeight);
+                return;
+            } else {
+                log.info("oldEventWeight {} < otherEventWeight {}", oldEventWeight, otherEventWeight);
+                oldSum += otherEventWeight - oldEventWeight;
+                log.info("Новая минимальная сумма: {}", oldSum);
+            }
+        } else {
+            log.info("eventWeight {} < otherEventWeight {}", eventWeight, otherEventWeight);
+            oldSum += eventWeight - oldEventWeight;
+            log.info("Новая минимальная сумма: {}", oldSum);
+        }
+        twoEventsMinSum.computeIfAbsent(first, k -> new HashMap<>())
+                .put(second, oldSum);
+        log.info("Обновляем минимальную сумму: first - {}, second - {}, sum - {}", first, second, oldSum);
     }
 
     private void updateEventWeightSum(UserActionAvro action, Double weightDiff) {
@@ -88,67 +150,6 @@ public class AggregatorServiceImpl implements AggregatorService {
         log.info("Новая сумма в eventWeightSum для события {}, равна: {}", eventId, newSum);
     }
 
-    private void updateTwoEventsMinSum(UserActionAvro action, Double diffWeight, List<Long> eventIdsForCalculate) {
-        Long userId = action.getUserId();
-        Long eventId = action.getEventId();
-        Double eventWeight = eventUserWeight.get(eventId).getOrDefault(userId, 0.0);
-        log.info("Расчитываем минимальную сумму для события {}, с событиями: {}", eventId, eventIdsForCalculate);
-
-        if (eventWeight.equals(0.0) || diffWeight.equals(0.0)) {
-            log.info("Вес действия для события {} равен 0 или не изменился, не делаем расчет", eventId);
-            return;
-        }
-        Double oldEventWeight = eventWeight - diffWeight;
-        log.info("Старый вес: {}, для события {}, пользователя {}", oldEventWeight, eventId, userId);
-
-        for (Long otherEventId : eventIdsForCalculate) {
-            Double otherEventWeight = eventUserWeight.get(otherEventId).getOrDefault(userId, 0.0);
-            log.info("Вес: {}, для события {}, пользователя {}", otherEventWeight, otherEventId, userId);
-            if (otherEventWeight.equals(0.0)) {
-                log.info("Вес действия для события {} равен 0, не делаем расчет", otherEventId);
-                continue;
-            }
-
-            Long first = Math.min(eventId, otherEventId);
-            Long second = Math.max(eventId, otherEventId);
-            Map<Long, Double> map = twoEventsMinSum.get(first);
-            if (map == null || map.isEmpty()) {
-                twoEventsMinSum.computeIfAbsent(first, k -> new HashMap<>())
-                        .put(second, Math.min(eventWeight, otherEventWeight));
-                log.info("Минимальная сумма еще не расчитывалась, сохраняем новую: first - {}, second - {}, sum - {}",
-                        first, second, Math.min(eventWeight, otherEventWeight));
-                continue;
-            }
-            Double oldSum = map.get(second);
-            log.info("Старая минимальная сумма {}, для событий {} и {}", oldSum, eventId, otherEventId);
-            if (oldSum == null) {
-                twoEventsMinSum.computeIfAbsent(first, k -> new HashMap<>())
-                        .put(second, Math.min(eventWeight, otherEventWeight));
-                log.info("Минимальная сумма еще не расчитывалась, сохраняем новую: first - {}, second - {}, sum - {}",
-                        first, second, Math.min(eventWeight, otherEventWeight));
-                continue;
-            }
-
-            if (eventWeight >= otherEventWeight) {
-                log.info("eventWeight {} >= otherEventWeight {}", eventWeight, otherEventWeight);
-                if (oldEventWeight >= otherEventWeight) {
-                    log.info("oldEventWeight {} >= otherEventWeight {}, сумму обновлять не нужно", oldEventWeight, otherEventWeight);
-                    continue;
-                } else {
-                    log.info("oldEventWeight {} < otherEventWeight {}", oldEventWeight, otherEventWeight);
-                    oldSum += otherEventWeight - oldEventWeight;
-                    log.info("Новая минимальная сумма: {}", oldSum);
-                }
-            } else {
-                log.info("eventWeight {} < otherEventWeight {}", eventWeight, otherEventWeight);
-                oldSum += eventWeight - oldEventWeight;
-                log.info("Новая минимальная сумма: {}", oldSum);
-            }
-            twoEventsMinSum.computeIfAbsent(first, k -> new HashMap<>())
-                    .put(second, oldSum);
-            log.info("Обновляем минимальную сумму: first - {}, second - {}, sum - {}", first, second, oldSum);
-        }
-    }
 
     private Double getDiffEventUserWeight(UserActionAvro action) {
         Long eventId = action.getEventId();
