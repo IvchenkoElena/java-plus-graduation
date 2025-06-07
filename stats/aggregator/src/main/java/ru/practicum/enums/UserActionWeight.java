@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 @Component
-@ConfigurationProperties("aggregator.user-action-weight")
+@ConfigurationProperties("user-action-weight")
 public class UserActionWeight {
     private double VIEW;
     private double REGISTER;
