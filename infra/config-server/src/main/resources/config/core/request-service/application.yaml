@@ -17,7 +17,15 @@ spring:
     init:
       mode: always
   datasource:
-    url: jdbc:postgresql://localhost:25432/ewm-db
-    driver-class-name: "org.postgresql.Driver"
-    username: "ewm-db"
-    password: "secret"
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:6543/ewm_request
+    username: main
+    password: main
+
+grpc:
+  client:
+    collector:
+      address: 'discovery:///collector'
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext

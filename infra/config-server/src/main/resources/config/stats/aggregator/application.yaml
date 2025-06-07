@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: aggregator
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: serializer.GeneralAvroSerializer
+    consumer:
+      bootstrap-servers: localhost:9092
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: deserializer.UserActionDeserializer
+      client-id: action-consumer
+      group-id: action-group
+      max-poll-records: 100
+      fetch-max-bytes: 3072000
+      max-partition-fetch-bytes: 307200
+      consume-attempts-timeout-ms: 1000
+    topics:
+      action-topic: stats.user-actions.v1
+      similarity-topic: stats.events-similarity.v1
+
+user-action-weight:
+  VIEW: 0.4
+  REGISTER: 0.8
+  LIKE: 1.0

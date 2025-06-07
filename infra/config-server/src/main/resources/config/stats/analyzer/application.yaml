@@ -1,0 +1,61 @@
+grpc:
+  server:
+    port: 0
+  client:
+    analyzer: # <- должно соответствовать значению в @GrpcClient
+      address: 'discovery:///analyzer' # адрес gRPC-сервиса
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+    negotiationType: plaintext
+
+spring:
+  application:
+    name: analyzer
+  output:
+    ansi:
+      enabled: always
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: analyzer_schema
+        format_sql: true
+  sql:
+    init:
+      mode: always
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:6543/ewm_analyzer
+    username: main
+    password: main
+
+analyzer:
+  kafka:
+    consumer:
+      user-action:
+        properties:
+          client.id: analyzerUserActionConsumer
+          group.id: analyzer-user-action
+          bootstrap.servers: localhost:9092
+          key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
+          value.deserializer: deserializer.UserActionDeserializer
+          enable.auto.commit: false
+      event-similarity:
+        properties:
+          client.id: analyzerEventSimilarityConsumer
+          group.id: analyzer-event-similarity
+          bootstrap.servers: localhost:9092
+          key.deserializer: org.apache.kafka.common.serialization.LongDeserializer
+          value.deserializer: deserializer.EventSimilarityDeserializer
+          enable.auto.commit: false
+    topics:
+      user-actions: stats.user-actions.v1
+      events-similarity: stats.events-similarity.v1
+
+application:
+  action-weight:
+    view: 0.4
+    register: 0.8
+    like: 1.0

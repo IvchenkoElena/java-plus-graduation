@@ -1,10 +1,13 @@
 package ru.practicum.service;
 
+import com.google.protobuf.Timestamp;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.CollectorClient;
 import ru.practicum.client.EventClient;
 import ru.practicum.client.UserClient;
 import ru.practicum.dto.event.EventDto;
@@ -21,11 +24,14 @@ import ru.practicum.exception.ParticipantLimitException;
 import ru.practicum.exception.RepeatableUserRequestException;
 import ru.practicum.exception.ValidationException;
 
+import ru.practicum.grpc.stats.actions.ActionTypeProto;
+import ru.practicum.grpc.stats.actions.UserActionProto;
 import ru.practicum.mapper.RequestMapper;
 import ru.practicum.model.Request;
 
 import ru.practicum.repository.RequestRepository;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,12 +40,14 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class RequestServiceImpl implements RequestService {
     private static final Logger log = LoggerFactory.getLogger(RequestServiceImpl.class);
     private final RequestRepository requestRepository;
     private final RequestMapper requestMapper;
     private final UserClient userClient;
     private final EventClient eventClient;
+    private final CollectorClient collectorClient;
 
     @Override
     public List<ParticipationRequestDto> getUserRequests(Long userId, HttpServletRequest request) {
@@ -52,7 +60,14 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @Transactional
     public ParticipationRequestDto addParticipationRequest(Long userId, Long eventId) {
+        Request request = new Request();
+        beforeAddRequest(userId, eventId, request);
+        return requestMapper.requestToParticipationRequestDto(requestRepository.save(request));
+    }
+
+    public Request beforeAddRequest(Long userId, Long eventId, Request request) {
         if (Objects.equals(eventClient.getById(eventId).getInitiator(), userId)) {
             throw new InitiatorRequestException(String.format("User with id %s is initiator for event with id %s",
                     userId, eventId));
@@ -65,7 +80,7 @@ public class RequestServiceImpl implements RequestService {
         if (!eventDto.getState().equals(EventState.PUBLISHED)) {
             throw new NotPublishEventException(String.format("Event with id %s is not published", eventId));
         }
-        Request request = new Request();
+
         if(!userClient.exists(userId)) {
             throw new NotFoundException(String.format("User with id %s not found", userId));
         }
@@ -80,21 +95,35 @@ public class RequestServiceImpl implements RequestService {
         if (eventDto.getParticipantLimit() == 0) {
             request.setStatus(RequestStatus.CONFIRMED);
             request.setCreatedOn(LocalDateTime.now());
-            return requestMapper.requestToParticipationRequestDto(requestRepository.save(request));
+            return request;
         }
 
         if (eventDto.isRequestModeration()) {
             request.setStatus(RequestStatus.PENDING);
             request.setCreatedOn(LocalDateTime.now());
-            return requestMapper.requestToParticipationRequestDto(requestRepository.save(request));
+            return request;
         } else {
             request.setStatus(RequestStatus.CONFIRMED);
             request.setCreatedOn(LocalDateTime.now());
         }
-        return requestMapper.requestToParticipationRequestDto(requestRepository.save(request));
+        collectorClient.sendUserAction(createUserAction(eventId, userId, ActionTypeProto.ACTION_REGISTER, Instant.now()));
+        return request;
+    }
+
+    private UserActionProto createUserAction(Long eventId, Long userId, ActionTypeProto type, Instant timestamp) {
+        return UserActionProto.newBuilder()
+                .setUserId(userId)
+                .setEventId(eventId)
+                .setActionType(type)
+                .setTimestamp(Timestamp.newBuilder()
+                        .setSeconds(timestamp.getEpochSecond())
+                        .setNanos(timestamp.getNano())
+                        .build())
+                .build();
     }
 
     @Override
+    @Transactional
     public ParticipationRequestDto cancelRequest(Long userId, Long requestId) {
         Request cancellingRequest = requestRepository.findByIdAndRequesterId(requestId, userId)
                 .orElseThrow(() -> new NotFoundException(String.format("Request with id %s not found or unavailable " +
@@ -114,6 +143,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @Transactional
     public EventRequestStatusUpdateResult changeRequestStatus(Long userId, Long eventId,
                                                               EventRequestStatusUpdateRequest eventStatusUpdate,
                                                               HttpServletRequest request) {

@@ -1,5 +1,6 @@
 package ru.practicum.event.service;
 
+import com.google.protobuf.Timestamp;
 import com.querydsl.core.types.Predicate;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
@@ -8,19 +9,20 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.CollectorClient;
+import ru.practicum.RecommendationClient;
 import ru.practicum.category.model.Category;
 import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.client.CommentClient;
 import ru.practicum.client.RequestClient;
-import ru.practicum.client.StatClient;
 import ru.practicum.client.UserClient;
 import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.enums.CommentStatus;
+import ru.practicum.dto.event.EventRecommendationDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.dto.request.enums.RequestStatus;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.OperationForbiddenException;
-import ru.practicum.dto.ViewStats;
 import ru.practicum.dto.event.enums.AdminUpdateStateAction;
 import ru.practicum.dto.event.EntityParam;
 import ru.practicum.dto.event.EventAdminUpdateDto;
@@ -40,11 +42,16 @@ import ru.practicum.event.model.Location;
 import ru.practicum.event.predicates.EventPredicates;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.event.repository.LocationRepository;
+import ru.practicum.grpc.stats.actions.ActionTypeProto;
+import ru.practicum.grpc.stats.actions.UserActionProto;
+import ru.practicum.grpc.stats.recommendation.RecommendedEventProto;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -60,8 +67,9 @@ public class EventServiceImpl implements EventService {
 
     private final UserClient userClient;
     private final RequestClient requestClient;
-    private final StatClient statClient;
     private final CommentClient commentClient;
+    private final RecommendationClient recommendationClient;
+    private final CollectorClient collectorClient;
 
     @Override
     public List<EventDto> adminEventsSearch(SearchEventsParam param) {
@@ -141,7 +149,7 @@ public class EventServiceImpl implements EventService {
             switch (sort) {
                 case EVENT_DATE ->
                         eventDtos.stream().sorted(Comparator.comparing(EventShortDto::getEventDate)).toList();
-                case VIEWS -> eventDtos.stream().sorted(Comparator.comparing(EventShortDto::getViews)).toList();
+                case RATING -> eventDtos.stream().sorted(Comparator.comparing(EventShortDto::getRating)).toList();
             }
         }
         return eventDtos;
@@ -276,11 +284,9 @@ public class EventServiceImpl implements EventService {
     }
 
     private EventDto addAdvancedData(EventDto eventDto) {
-        List<String> gettingUris = new ArrayList<>();
-        gettingUris.add("/events/" + eventDto.getId());
-        Long views = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), gettingUris, true)
-                .stream().map(ViewStats::getHits).reduce(0L, Long::sum);
-        eventDto.setViews(views);
+        Map<Long, Double> proto = recommendationClient.getInteractionsCount(List.of(eventDto.getId()));
+        Double rating = proto.isEmpty() ? 0.0 : proto.get(eventDto.getId());
+        eventDto.setRating(rating);
 
         Event event = eventRepository.findById(eventDto.getId())
                 .orElseThrow(() -> new NotFoundException(String.format("Event with id %s not found", eventDto.getId())));
@@ -308,9 +314,6 @@ public class EventServiceImpl implements EventService {
 
         List<CommentDto> comments = commentClient.getAllByEventIdInAndStatus(idsList, CommentStatus.PUBLISHED);
 
-        List<String> uris = eventDtoList.stream().map(dto -> "/events/" + dto.getId()).toList();
-        List<ViewStats> viewStats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), uris, false);
-
         List<EventDto> changedList = eventDtoList.stream()
                 .peek(dto -> dto.setConfirmedRequests(requests.stream()
                         .filter(r -> Objects.equals(r.getEvent(), dto.getId()))
@@ -318,10 +321,6 @@ public class EventServiceImpl implements EventService {
                 .peek(dto -> dto.setComments(comments.stream()
                         .filter(c -> Objects.equals(c.getEventId(), dto.getId()))
                         .toList()))
-                .peek(dto -> dto.setViews(viewStats.stream()
-                        .filter(v -> v.getUri().equals("/events/" + dto.getId()))
-                        .map(ViewStats::getHits)
-                        .reduce(0L, Long::sum)))
                 .toList();
 
         return changedList;
@@ -332,21 +331,52 @@ public class EventServiceImpl implements EventService {
         List<Long> idsList = eventShortDtoList.stream().map(EventShortDto::getId).toList();
         List<ParticipationRequestDto> requests = requestClient.getListByEventIds(idsList);
 
-        List<CommentDto> comments = commentClient.getAllByEventIdInAndStatus(idsList, CommentStatus.PUBLISHED);
-
-        List<String> uris = eventShortDtoList.stream().map(dto -> "/events/" + dto.getId()).toList();
-        List<ViewStats> viewStats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(), uris, false);
-
         List<EventShortDto> changedList = eventShortDtoList.stream()
                 .peek(dto -> dto.setConfirmedRequests(requests.stream()
                         .filter(r -> Objects.equals(r.getEvent(), dto.getId()))
                         .count()))
-                .peek(dto -> dto.setViews(viewStats.stream()
-                        .filter(v -> v.getUri().equals("/events/" + dto.getId()))
-                        .map(ViewStats::getHits)
-                        .reduce(0L, Long::sum)))
                 .toList();
 
         return changedList;
+    }
+
+    @Override
+    public List<EventRecommendationDto> getRecommendations(long userId) {
+        log.info("Началось получение рекомендаций для пользователя {}", userId);
+        int size = 10;
+        List<RecommendedEventProto> recommendedEvents = recommendationClient.getRecommendations(userId, size);
+        List<EventRecommendationDto> eventRecommendationDtoList = new ArrayList<>();
+        for (RecommendedEventProto recommendedEvent : recommendedEvents) {
+            EventRecommendationDto eventRecommendationDto = new EventRecommendationDto();
+            eventRecommendationDto.setEventId(recommendedEvent.getEventId());
+            eventRecommendationDto.setScore(recommendedEvent.getScore());
+            eventRecommendationDtoList.add(eventRecommendationDto);
+        }
+        return eventRecommendationDtoList;
+    }
+
+    @Override
+    public void addLike(Long eventId, Long userId) {
+        log.info("Добавляем лайк к событию {} от пользователя {}", eventId, userId);
+        ParticipationRequestDto request = requestClient
+                .getByRequesterIdAndEventIdAndStatus(userId, eventId, RequestStatus.CONFIRMED);
+
+        if (request != null) {
+            collectorClient.sendUserAction(createUserAction(eventId, userId, ActionTypeProto.ACTION_LIKE, Instant.now()));
+        } else {
+            throw new ValidationException("Пользователь не был на данном мероприятии");
+        }
+    }
+
+    private UserActionProto createUserAction(Long eventId, Long userId, ActionTypeProto type, Instant timestamp) {
+        return UserActionProto.newBuilder()
+                .setUserId(userId)
+                .setEventId(eventId)
+                .setActionType(type)
+                .setTimestamp(Timestamp.newBuilder()
+                        .setSeconds(timestamp.getEpochSecond())
+                        .setNanos(timestamp.getNano())
+                        .build())
+                .build();
     }
 }

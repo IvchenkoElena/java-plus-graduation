@@ -1,6 +1,6 @@
 package ru.practicum.event.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
+import com.google.protobuf.Timestamp;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
@@ -8,18 +8,23 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import ru.practicum.client.StatClient;
-import ru.practicum.dto.EndpointHitDto;
+import ru.practicum.CollectorClient;
 import ru.practicum.dto.event.EntityParam;
 import ru.practicum.dto.event.EventDto;
+import ru.practicum.dto.event.EventRecommendationDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.enums.EventSort;
 import ru.practicum.event.service.EventService;
+import ru.practicum.grpc.stats.actions.ActionTypeProto;
+import ru.practicum.grpc.stats.actions.UserActionProto;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,8 +37,7 @@ public class PublicEventController {
     private static final String MAIN_SERVICE = "ewm-main-service";
 
     private final EventService eventService;
-    private final StatClient statClient;
-
+    private final CollectorClient collectorClient;
 
     /**
      * Получение событий с возможностью фильтрации.
@@ -65,8 +69,7 @@ public class PublicEventController {
                                          @RequestParam(required = false) @DateTimeFormat(pattern = DATE_PATTERN) LocalDateTime rangeStart,
                                          @RequestParam(required = false) @DateTimeFormat(pattern = DATE_PATTERN) LocalDateTime rangeEnd,
                                          @RequestParam(required = false) Boolean paid,
-                                         @RequestParam(required = false, defaultValue = "false") boolean onlyAvailable,
-                                         HttpServletRequest request) {
+                                         @RequestParam(required = false, defaultValue = "false") boolean onlyAvailable) {
         EntityParam params = new EntityParam();
         params.setText(text);
         params.setSort(sort);
@@ -79,7 +82,6 @@ public class PublicEventController {
         params.setOnlyAvailable(onlyAvailable);
 
         List<EventShortDto> result = eventService.getEvents(params);
-        saveHit(request);
         return result;
     }
 
@@ -93,20 +95,32 @@ public class PublicEventController {
      */
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public EventDto getEvent(@PathVariable Long id, HttpServletRequest request) {
+    public EventDto getEvent(@PathVariable Long id, @RequestHeader("X-EWM-USER-ID") long userId) {
 
         EventDto result = eventService.getPublishedEvent(id);
-        saveHit(request);
+        collectorClient.sendUserAction(createUserAction(id, userId, ActionTypeProto.ACTION_VIEW, Instant.now()));
         return result;
     }
 
-    private void saveHit(HttpServletRequest request) {
-        EndpointHitDto endpointHitDto = new EndpointHitDto();
-        endpointHitDto.setApp(MAIN_SERVICE);
-        endpointHitDto.setUri(request.getRequestURI());
-        endpointHitDto.setIp(request.getRemoteAddr());
-        endpointHitDto.setTimestamp(LocalDateTime.now());
-        statClient.saveHit(endpointHitDto);
+    private UserActionProto createUserAction(Long eventId, Long userId, ActionTypeProto type, Instant timestamp) {
+        return UserActionProto.newBuilder()
+                .setUserId(userId)
+                .setEventId(eventId)
+                .setActionType(type)
+                .setTimestamp(Timestamp.newBuilder()
+                        .setSeconds(timestamp.getEpochSecond())
+                        .setNanos(timestamp.getNano())
+                        .build())
+                .build();
     }
 
+    @GetMapping("/recommendations")
+    public List<EventRecommendationDto> getRecommendations(@RequestHeader("X-EWM-USER-ID") long userId) {
+        return eventService.getRecommendations(userId);
+    }
+
+    @PutMapping("/{eventId}/like")
+    public void addLike(@PathVariable Long eventId, @RequestHeader("X-EWM-USER-ID") long userId) {
+        eventService.addLike(eventId, userId);
+    }
 }

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package stats.service.dashboard;
+
+import "messages/user_predictions.proto";
+
+option java_multiple_files = true;
+option java_package = "ru.practicum.ewm.stats.services";
+
+service RecommendationsController {
+  rpc GetRecommendationsForUser (recommendation_messages.UserPredictionsRequestProto)
+      returns (stream recommendation_messages.RecommendedEventProto);
+
+  rpc GetSimilarEvents (recommendation_messages.SimilarEventsRequestProto)
+      returns (stream recommendation_messages.RecommendedEventProto);
+
+  rpc GetInteractionsCount(recommendation_messages.InteractionsCountRequestProto)
+      returns (stream recommendation_messages.RecommendedEventProto);
+}
