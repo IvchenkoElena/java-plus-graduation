@@ -345,20 +345,12 @@ public class EventServiceImpl implements EventService {
         log.info("Началось получение рекомендаций для пользователя {}", userId);
         int size = 10;
         List<RecommendedEventProto> recommendedEvents = recommendationClient.getRecommendations(userId, size);
-
-//        List<RecommendedEventProto> recommendedEvents = recommendationClient.getRecommendationsForUser(UserPredictionsRequestProto.newBuilder()
-//                .setUserId(userId)
-//                .setMaxResults(size)
-//                .build());
-
         List<EventRecommendationDto> eventRecommendationDtoList = new ArrayList<>();
-        if (!recommendedEvents.isEmpty()) {
-            for (RecommendedEventProto recommendedEvent : recommendedEvents) {
-                EventRecommendationDto eventRecommendationDto = new EventRecommendationDto();
-                eventRecommendationDto.setEventId(recommendedEvent.getEventId());
-                eventRecommendationDto.setScore(recommendedEvent.getScore());
-                eventRecommendationDtoList.add(eventRecommendationDto);
-            }
+        for (RecommendedEventProto recommendedEvent : recommendedEvents) {
+            EventRecommendationDto eventRecommendationDto = new EventRecommendationDto();
+            eventRecommendationDto.setEventId(recommendedEvent.getEventId());
+            eventRecommendationDto.setScore(recommendedEvent.getScore());
+            eventRecommendationDtoList.add(eventRecommendationDto);
         }
         return eventRecommendationDtoList;
     }

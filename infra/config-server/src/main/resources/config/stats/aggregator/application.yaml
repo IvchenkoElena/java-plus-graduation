@@ -19,3 +19,8 @@ spring:
     topics:
       action-topic: stats.user-actions.v1
       similarity-topic: stats.events-similarity.v1
+
+user-action-weight:
+  VIEW: 0.4
+  REGISTER: 0.8
+  LIKE: 1.0

@@ -3,6 +3,7 @@ package ru.practicum.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.practicum.enums.UserActionWeight;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
@@ -18,6 +19,7 @@ public class AggregatorServiceImpl implements AggregatorService {
     private Map<Long, Map<Long, Double>> eventUserWeight = new HashMap<>();
     private Map<Long, Double> eventWeightSum = new HashMap<>();
     private Map<Long, Map<Long, Double>> twoEventsMinSum = new HashMap<>();
+    private UserActionWeight userActionWeight;
 
     @Override
     public List<EventSimilarityAvro> aggregationUserAction(UserActionAvro action) {
@@ -203,9 +205,9 @@ public class AggregatorServiceImpl implements AggregatorService {
 
     private double getWeight(UserActionAvro action) {
         return switch (action.getActionType()) {
-            case VIEW -> 0.4;
-            case REGISTER -> 0.8;
-            case LIKE -> 1.0;
+            case VIEW -> userActionWeight.getVIEW();
+            case REGISTER -> userActionWeight.getREGISTER();
+            case LIKE -> userActionWeight.getLIKE();
         };
     }
 }
